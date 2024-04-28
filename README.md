@@ -1,11 +1,19 @@
-# godot-cli
+# `godot-cli: a convenience cli for godot`
 
-![godot-cli](https://github.com/Swarkin/godot-cli/assets/102416174/3ba991f7-2ef3-4ef1-a3be-e4128bc66678)
+## `features`
 
-## features
+```
+config get/set entry [value] | configure the cli
+new/create name | create a project
+open name | open a project
+run name [n] | run a project [n times]
+list | list all projects
+delete/remove name | delete a project
+```
 
-![features](https://github.com/Swarkin/godot-cli/assets/102416174/b44b18ab-80f3-41d4-aeee-c41cdcc556f0)
+## `config`
 
-## config
-
-![config](https://github.com/Swarkin/godot-cli/assets/102416174/a3a3f9f5-43e5-4c83-a2c8-1216e5006587)
+```
+godot_exec: path to the executable
+project_dir: directory containing projects
+```
