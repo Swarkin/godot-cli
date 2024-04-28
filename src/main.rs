@@ -84,7 +84,7 @@ fn main() {
                     .unwrap();
             }
 
-            open_godot(project_dir);
+            open_godot(vec!("-e", "--path", &project_dir));
         }
         "open" => {
             if !args_count(2, arg_len, Ordering::Equal) { return; }
@@ -98,9 +98,58 @@ fn main() {
             if !is_valid_name(name) { return; }
 
             let project_dir = format!("{}/{name}", config.project_dir);
-            println!("opening project {project_dir}...");
+            let path = Path::new(&project_dir);
+            if !path.exists() || path.is_file() {
+                err_msg("invalid path or no permission");
+                return;
+            }
 
-            open_godot(project_dir);
+            println!("opening project {}...", project_dir.bold());
+
+            open_godot(vec!("-e", "--path", &project_dir));
+        }
+        "run" => {
+            if !args_count(1, arg_len, Ordering::Greater) { return; }
+            if !args_count(4, arg_len, Ordering::Less) { return; }
+
+            if config.godot_exec.is_empty() || config.project_dir.is_empty() {
+                print_missing_config_notice(vec!("godot_exec", "project_dir"));
+                return;
+            }
+
+            let name = &args[1];
+            if !is_valid_name(name) { return; }
+
+            let instances_string: String;
+            let instances: u8;
+            if arg_len > 2 {
+                instances_string = args[2].clone();
+                match instances_string.clone().parse::<u8>() {
+                    Ok(v) => instances = v,
+                    Err(e) => {
+                        warn_msg(&format!("invalid instance count (0-255): {e}. defaulting to 1"));
+                        instances = 1;
+                    }
+                }
+            } else {
+                instances_string = String::from("1");
+                instances = 1;
+            }
+
+            let project_dir = format!("{}/{name}", config.project_dir);
+            let path = Path::new(&project_dir);
+            if !path.exists() || path.is_file() {
+                err_msg("invalid path or no permission");
+                return;
+            }
+            
+            if instances > 4 && !prompt(&format!("run {} instances of the project?", instances_string.bold()), None) { return; }
+            
+            println!("running project {} with {instances} instances...", project_dir.bold());
+
+            for _ in 0..instances {
+                open_godot(vec!("--path", &project_dir));
+            }
         }
         "list" => {
             if !args_count(1, arg_len, Ordering::Equal) { return; }
@@ -228,9 +277,9 @@ fn main() {
     }
 }
 
-fn open_godot(dir: String) {
+fn open_godot(args: Vec<&str>) {
     process::Command::new("godot")
-        .args(["-e", "--path", &dir])
+        .args(args)
         .spawn()
         .unwrap();
 }
@@ -292,11 +341,12 @@ fn print_action_help() {
     println!("{} - a convenience cli for godot", NAME.green().bold());
     hint_msg(&format!("to force disable/enable the use of colors, use {} respectively\n", "--no-color/--force-color".bold()));
 
-    println!("{}: configure the cli", "config".bold());
-    println!("{}/{}: create a project", "new".bold(), "create".bold());
-    println!("{}: open a project", "open".bold());
-    println!("{}: list all projects", "list".bold());
-    println!("{}/{}: delete a project\n", "delete".bold(), "remove".bold());
+    println!("{} get/set entry [value] | configure the cli", "config".bold());
+    println!("{}/{} name | create a project", "new".bold(), "create".bold());
+    println!("{} name | open a project", "open".bold());
+    println!("{} name [n] | run a project [n times]", "run".bold());
+    println!("{} | list all projects", "list".bold());
+    println!("{}/{} name | delete a project\n", "delete".bold(), "remove".bold());
 }
 
 fn print_config_help() {
